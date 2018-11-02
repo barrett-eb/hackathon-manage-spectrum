@@ -1,6 +1,7 @@
 import React from 'react';
 import { parse } from 'query-string';
 import jwt from 'jsonwebtoken';
+import querystring from 'query-string';
 import eventbrite from 'eventbrite';
 import { BASE_API_URL, CLIENT_SECRET } from '../constants';
 import Avatar from 'eventbrite_design_system/avatar/Avatar';
@@ -10,7 +11,7 @@ export default class ExtensionPage extends React.PureComponent {
   constructor(props) {
     super(props);
     const query = parse(props.location.search || '');
-    const token = query.esr ? jwt.decode(query.esr, CLIENT_SECRET) : null;
+    let token = query.esr ? jwt.decode(query.esr, CLIENT_SECRET) : { auth_token: querystring.parse(props.location.hash)['access_token'] };
     this.state = {
       ...token,
     };
@@ -53,7 +54,7 @@ export default class ExtensionPage extends React.PureComponent {
   componentDidUpdate() {
     if (window.EB && window.EB.FrameAPI) {
       console.log('found frame resize');
-      window.EB.FrameAPI.resize({});
+      window.EB.FrameAPI.init({});
     }
   }
 
@@ -71,16 +72,14 @@ export default class ExtensionPage extends React.PureComponent {
       <div>
         <div className="eds-g-grid">
           <div className="eds-g-cell eds-g-cell-12-12">
-            <div className="eds-align--center">
-              <section className="eds-l-pad-all-4">
-                <h2 className="eds-text-hl eds-text--center eds-l-pad-all-2">
-                  Top Fans
-                </h2>
-                <div className={gridClasses}>
-                  {this.getUserDetails()}
-                </div>
-              </section>
-            </div>
+            <section className="eds-l-pad-all-4">
+              <h2 className="eds-text-hl eds-l-pad-all-2">
+                Top Fans
+              </h2>
+              <div className={gridClasses}>
+                {this.getUserDetails()}
+              </div>
+            </section>
             {debugInfo}
           </div>
         </div>
