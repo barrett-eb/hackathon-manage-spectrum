@@ -1,6 +1,7 @@
 import React from 'react';
 import { parse } from 'query-string';
 import jwt from 'jsonwebtoken';
+import _ from 'lodash';
 import querystring from 'query-string';
 import eventbrite from 'eventbrite';
 import { BASE_API_URL, CLIENT_SECRET } from '../constants';
@@ -60,14 +61,14 @@ export default class ExtensionPage extends React.PureComponent {
       const avatar = (
         <Avatar
                 size="medium"
-                text={'' + attendee}
+                text={'' + attendee.visits}
         />
       );
       return (
         <TextListItem
               key={key}
               buttonType="link"
-              content={key}
+              content={attendee.name}
               extraContent={avatar}
               path=""
               onSelect={() => {}}
@@ -97,6 +98,14 @@ export default class ExtensionPage extends React.PureComponent {
     let {
       attendee_count
     } = this.state;
+
+    let atts = _.sortBy(Object.keys(attendee_count).map((key) => {
+      return {
+        name: key,
+        visits: attendee_count[key]
+      };
+    }), (obj) => obj.visits * -1);
+
     return (
       <div>
         <div className="eds-g-grid">
@@ -106,7 +115,7 @@ export default class ExtensionPage extends React.PureComponent {
                 Top Fans
               </h2>
               <div className={gridClasses}>
-                { Object.keys(attendee_count).map((key) => this.getUserDetails(attendee_count[key], key))}
+                { atts.map((att, key) => this.getUserDetails(att, key))}
               </div>
             </section>
             {debugInfo}
