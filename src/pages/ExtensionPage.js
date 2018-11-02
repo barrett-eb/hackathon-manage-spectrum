@@ -3,6 +3,8 @@ import { parse } from 'query-string';
 import jwt from 'jsonwebtoken';
 import eventbrite from 'eventbrite';
 import { BASE_API_URL, CLIENT_SECRET } from '../constants';
+import Avatar from 'eventbrite_design_system/avatar/Avatar';
+import TextListItem from 'eventbrite_design_system/textListItem/TextListItem';
 
 export default class ExtensionPage extends React.PureComponent {
   constructor(props) {
@@ -16,33 +18,72 @@ export default class ExtensionPage extends React.PureComponent {
   }
 
   componentDidMount() {
-    this.sdk.request('/users/me/').then(user => this.setState({ user }));
+    this.sdk.request('/users/me/?expand=image').then(user => this.setState({ user }));
     // this isn't working so it has scroll :sad_panda:
-    // window.EB.FrameAPI.init({});
+    if (window.EB && window.EB.FrameAPI) {
+      console.log('found frame');
+      window.EB.FrameAPI.init({});
+    }
   }
 
   getUserDetails = () => {
     const { user } = this.state;
     if (user) {
+      const avatar = (
+        <Avatar
+                size="medium"
+                imageUrl={user.image.url}
+                text={user.name}
+        />
+      );
       return (
-        <div>
-          <h1>{user.name}</h1>
-          {user.image_id && <img src={user.image_id} alt="User Avatar" />}
-        </div>
+        <TextListItem
+              key={user.id}
+              buttonType="link"
+              content={user.name}
+              extraContent={avatar}
+              path=""
+              onSelect={() => {}}
+        />
       );
     }
     return null;
   };
 
+  componentDidUpdate() {
+    if (window.EB && window.EB.FrameAPI) {
+      console.log('found frame resize');
+      window.EB.FrameAPI.resize({});
+    }
+  }
+
   render() {
+    const gridClasses = 'eds-g-cell eds-g-cell-1-1 eds-g-cell-sm-8-12 eds-g-offset-sm-2-12 eds-g-cell-mn-6-12 eds-g-offset-mn-3-12';
+
+    const debugInfo = (false) ? (
+      <div style={{ position:'absolute', bottom: 0, backgroundColor: '#333' }}>
+        <h4 style={{ color: '#DDD' }}>Token details</h4>
+        <code style={{ fontSize: 11, color: '#DDD' }}>{JSON.stringify(this.state)}</code>
+      </div>
+    ) : null;
+
     return (
       <div>
-        <h1>Token details</h1>
-        <code>{JSON.stringify(this.state)}</code>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <br key={i} />
-        ))}
-        {this.getUserDetails()}
+        <div className="eds-g-grid">
+          <div className="eds-g-cell eds-g-cell-12-12">
+            <div className="eds-align--center">
+              <section className="eds-l-pad-all-4">
+                <h2 className="eds-text-hl eds-text--center eds-l-pad-all-2">
+                  Top Fans
+                </h2>
+                <div className={gridClasses}>
+                  {this.getUserDetails()}
+                </div>
+              </section>
+            </div>
+            {debugInfo}
+          </div>
+        </div>
       </div>
     );
   }
