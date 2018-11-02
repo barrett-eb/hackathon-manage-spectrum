@@ -14,8 +14,11 @@ export default class ExtensionPage extends React.PureComponent {
     let token = query.esr ? jwt.decode(query.esr, CLIENT_SECRET) : { auth_token: querystring.parse(props.location.hash)['access_token'] };
     this.state = {
       ...token,
+      attendee_count: {},
     };
     this.sdk = eventbrite({ baseUrl: BASE_API_URL, token: token.auth_token });
+    this.fetchEvents = this.fetchEvents.bind(this);
+    this.getUserDetails = this.getUserDetails.bind(this);
   }
 
   componentDidMount() {
@@ -25,23 +28,46 @@ export default class ExtensionPage extends React.PureComponent {
       console.log('found frame');
       window.EB.FrameAPI.init({});
     }
+    this.fetchEvents();
   }
 
-  getUserDetails = () => {
-    const { user } = this.state;
-    if (user) {
+  fetchEvents() {
+    let attendee_count = {};
+    return this.sdk.request('/users/me/events/')
+      .then(({ events }) => {
+        Promise.all(events.map((event, key) => {
+          return this.sdk.request(`/events/${event.id}/attendees/`)
+            .then(({ attendees } ) => {
+              attendees.forEach((att) => {
+                if (!attendee_count[att.profile.email]) {
+                  attendee_count[att.profile.email] = 1;
+                } else {
+                  attendee_count[att.profile.email]++;
+                }
+              });
+            })
+        }))
+          .then(() => {
+            this.setState({ attendee_count });
+          });
+      });
+  }
+
+
+  getUserDetails = (attendee, key) => {
+    console.log(attendee, key);
+    if (attendee) {
       const avatar = (
         <Avatar
                 size="medium"
-                imageUrl={user.image.url}
-                text={user.name}
+                text={'' + attendee}
         />
       );
       return (
         <TextListItem
-              key={user.id}
+              key={key}
               buttonType="link"
-              content={user.name}
+              content={key}
               extraContent={avatar}
               path=""
               onSelect={() => {}}
@@ -68,6 +94,9 @@ export default class ExtensionPage extends React.PureComponent {
       </div>
     ) : null;
 
+    let {
+      attendee_count
+    } = this.state;
     return (
       <div>
         <div className="eds-g-grid">
@@ -77,7 +106,7 @@ export default class ExtensionPage extends React.PureComponent {
                 Top Fans
               </h2>
               <div className={gridClasses}>
-                {this.getUserDetails()}
+                { Object.keys(attendee_count).map((key) => this.getUserDetails(attendee_count[key], key))}
               </div>
             </section>
             {debugInfo}
